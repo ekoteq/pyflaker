@@ -116,7 +116,7 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
 # use of this class is not required - a generator may be created by
 # calling the global `generator` function above the below class just makes
 # managing the generator that much easier
-class Client():
+class PyflakeClient():
     def __init__(self, epoch, pid, seed):
         self.epoch = epoch
 
