@@ -76,9 +76,9 @@ On renewal, the old generator is destroyed via the client's `destroy()` method, 
   client.destroy()
 ```
 
-Once the available generator has been destroyed, the `renew` method creates a new generator for the client to utilize. This method also checks if a generator is available prior to creating a new one to prevent unintentional overwrites. Like `destroy()`, This method is also automatically called during the `renew` process, and passes along the `pid` and `seed` values.
+Once the available generator has been destroyed, the `renew` method creates a new generator for the client to utilize. This method also checks if a generator is available prior to creating a new one to prevent unintentional overwrites. Like `client.destroy()`, This method is also automatically called during the `renew` process, and passes along the `pid` and `seed` values.
 ```python
-  client.create(pid, seed)
+  client.create(_pid, _seed)
 ```
 
 Once the `renew` process has completed, new IDs may be perpetually generated until the script is terminated, or the generator is renewed again or destroyed.
@@ -106,13 +106,13 @@ The `fmt` variable is optional and defaults to `ms` for `milliseconds.` Passing 
 ```
 
 ### Client
-This funciton is built into the client class and does not need to be additionally imported.
+This function is built into the client class and does not need to be additionally imported.
 
-When calling the `to_timestamp` function via the client class, the client's epoch is used to determine the snowflake's resulting timestamp. As such, snowflakes generated using a different Client or generator may return invalid timestamps if the epoch time is different.
+When calling the `to_timestamp` method, the client's epoch is used to determine the snowflake's resulting timestamp. As such, snowflakes generated using a different Client or generator may return invalid timestamps if the epoch time used to generate the snowflake ID is different than the epoch time of the client used for conversion.
 
 The `fmt` variable is optional here as well, and defaults to `ms` for `milliseconds.` Passing a value of `s` for `seconds` will return a value of seconds passed since epoch time. 
 
-NOTE: Due to the bit placement of the `timestamp` value utilized during snowflake generation, the translator function will continue to operate even if the `pid` or `seed` generator values are renewed after client initialization.
+NOTE: Due to the bit placement of the `timestamp` value utilized during snowflake generation, the translator method will continue to accurately translate snowflakes even if the `pid` or `seed` generator values are renewed after client initialization. However, if the client's epoch time is modified, previous snowflake IDs may no longer be translatable.
 
 ```python
   from pyflake import Client, generate_seed
