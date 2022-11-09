@@ -24,7 +24,7 @@ def generate_seed(bits):
 
 # returns a generator that allows a client to generate IDs by calling
 # `next([generator])` on the generator
-def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
+def pyflake_generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
     # A snowflake is comprised of 64 total bits
     # 42 of the 64 bits exist in the timestamp value (in milliseconds)
     # 22 of the 64 total bits exist in:
