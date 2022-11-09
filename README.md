@@ -47,7 +47,7 @@ To generate an ID from a standalone generator, the `next(<generator>)` method sh
 ```
 
 ## Client
-This package offers a client class to easily create, renew, and destroy a generator, as well as generate IDs with a cleaner API (as opposed to calling `next(<generator>)`.
+This package offers a client class to easily create, renew, and destroy a generator, as well as generate IDs with a cleaner API (as opposed to calling `next(<generator>)`).
 ```python
   from pyflake import Client, generate_seed
 
