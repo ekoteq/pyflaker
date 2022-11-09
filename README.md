@@ -4,6 +4,11 @@
 # Requirements
 - Python 3.10
 
+## Core modules imported
+- `time` - Used to generate timestamp values
+- `math` - Used to ensure timestamp values are `int` and not `float`
+- `random` - Used to generate seed values within `generate_seed`
+
 # Usage
 
 ## Seeds
