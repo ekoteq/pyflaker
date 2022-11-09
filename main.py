@@ -7,7 +7,7 @@ import random
 # Adding the epoch time back into that value will return the GMT time
 # at which the ID was created
 def to_timestamp(epoch, id, fmt = 'ms'):
-    id = id >> 22   # strip the lower 22 bits
+    id = id >> 22   # strip the lower 22 bits holding the pid, seed, and sequence
     id += epoch # adjust for defined epoch time (ms)
 
     # clients can optionally request timestamp in seconds format
@@ -25,16 +25,15 @@ def generate_seed(bits):
 # returns a generator that allows a client to generate IDs by calling
 # `next([generator])` on the generator
 # all generated IDs may be converted back into a timestamp by stripping
-# the first 22 bits and adding the epoch time into the result. A timestamp
-# cannot be returned without knowing the epoch used to generate it.
-# the remaining seed values (pid, seed)
+# the lower 22 bits and adding the epoch time into the remaining value.
+# A timestamp cannot be returned without knowing the epoch used to
+# generate it.
 def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
-    # based on below values, a snowflake is comprised of 22 total bits
-    # defining the expected bits in seed values
+    # A snowflake is comprised of 64 total bits
+    # 42 of the 64 bits exist in the timestamp value (in milliseconds)
+    # 22 of the 64 total bits exist in:
     pid_bits = 5
     seed_bits = 5
-
-    # sequence will always be 12 bits
     sequence_bits = 12
 
     # define the maximum allowed seed values based on defined bits
