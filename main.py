@@ -12,6 +12,7 @@ def to_timestamp(epoch, id, fmt = 'ms'):
 
     # clients can optionally request timestamp in seconds format
     # by specifying fmt as 's' instead of 'ms'
+    # this may return a float value
     if fmt == 's':
         id = id / 1000
 
@@ -24,7 +25,7 @@ def generate_seed(bits):
 
 # returns a generator that allows a client to generate IDs by calling
 # `next([generator])` on the generator
-def pyflake_generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
+def pyflake_generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000)):
     # A snowflake is comprised of 64 total bits
     # 42 of the 64 bits exist in the timestamp value (in milliseconds)
     # 22 of the 64 total bits exist in:
@@ -79,7 +80,7 @@ def pyflake_generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
         if last_timestamp == timestamp:
             sequence = (sequence + 1) & sequence_mask
             # in the event the sequence becomes overrun, the sequence is updated
-            # and the process continues after a one-second delay, ensuring a new
+            # and the process continues after a one millisecond delay, ensuring a new
             # timestamp is used, preventing conflicts in IDs where sequences are
             # full, or cannot provide further unique values
             if sequence == 0:
