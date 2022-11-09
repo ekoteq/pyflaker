@@ -1,4 +1,3 @@
-import os
 import time
 import math
 import random
@@ -147,5 +146,5 @@ class Client():
     def generate(self):
         return next(self.generator)
 
-    def to_timestamp(self, id):
-        return to_timestamp(self.epoch, id, )
+    def to_timestamp(self, id, fmt):
+        return to_timestamp(self.epoch, id, fmt)
