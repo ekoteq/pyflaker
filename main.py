@@ -69,7 +69,9 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
     while True:
         timestamp = math.floor(time.time() * 1000)
 
-        # if time is moving backwards
+        # If the previous timestamp is greater than the current timestamp,
+        # as if time is moving backwards, wait until time catches up to
+        # ensure only sequential IDs are issued in ascending order
         if last_timestamp > timestamp:
             sleep(last_timestamp-timestamp)
             continue
@@ -77,16 +79,20 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
         # if an ID was already generated under the current sequence value
         # as such may be the case in race conditions, where multiple IDs
         # are requested at the same time, we want to increase the sequence
-        # before proceeding. If the current timestamp is greater the previous
-        # timestamp, the sequence is reset.
+        # before proceeding.
         if last_timestamp == timestamp:
             sequence = (sequence + 1) & sequence_mask
             # in the event the sequence becomes overrun, the sequence is updated
-            # and the process continues after a one-second delay
+            # and the process continues after a one-second delay, ensuring a new
+            # timestamp is used, preventing conflicts in IDs where sequences are
+            # full, or cannot provide further unique values
             if sequence == 0:
                 sequence = -1 & sequence_mask
                 sleep(1)
                 continue
+        # Otherwise, if If the current timestamp is greater than the
+        # previous timestamp, the sequence is reset, as there will be no
+        # conflicts with previous IDs under a new timestamp
         else:
             sequence = 0
 
