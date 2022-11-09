@@ -3,6 +3,27 @@ import time
 import math
 import random
 
+# IDs are snowflakes generated using `worker` and `data center` IDs,
+# the lower 22 bits of the generated snowflake can be easily stripped
+# to return the total milliseconds passed since a defined `epoch.`
+# Adding the epoch time back into that value will return the GMT time
+# at which the ID was created
+def to_timestamp(epoch, id, fmt = 'ms'):
+    id = id >> 22   # strip the lower 22 bits
+    id += epoch # adjust for defined epoch time (ms)
+
+    # clients can optionally request timestamp in seconds format
+    # by specifying fmt as 's' instead of 'ms'
+    if fmt == 's':
+        id = id / 1000
+
+    return id
+
+# returns a random integer that is no less than one, and no greater
+# than the maximum integer value of the bits provided
+def generate_seed(bits):
+    return random.randint(1, (2^bits-1))
+
 # returns a generator that allows a client to generate IDs by calling
 # `next([generator])` on the generator
 # all generated IDs may be converted back into a timestamp by stripping
@@ -95,7 +116,7 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
 # use of this class is not required - a generator may be created by
 # calling the global `generator` function above the below class just makes
 # managing the generator that much easier
-class Snowflake():
+class Client():
     def __init__(self, epoch, pid, seed):
         self.epoch = epoch
 
@@ -117,49 +138,40 @@ class Snowflake():
 
     # replaces the current generator with a new one, and allows
     # the requesting client to define a process ID and seed value
-    # if desired, or defines one if unavailable
     def renew(self, pid, seed):
         self.destroy()
         self.create(pid, seed)
-
-    # IDs are snowflakes generated using `worker` and `data center` IDs,
-    # the lower 22 bits of the generated snowflake can be easily stripped
-    # to return the total milliseconds passed since a defined `epoch.`
-    # Adding the epoch time back into that value will return the GMT time
-    # at which the ID was created
-    def to_timestamp(_id, fmt: 'ms'):
-        _id = _id >> 22   # strip the lower 22 bits
-        _id += self.epoch # adjust for defined epoch time (ms)
-
-        # clients can optionally request timestamp in seconds format
-        # by specifying fmt as 's' instead of 'ms'
-        if fmt == 's':
-            _id = _id / 1000
-
-        return _id
 
     # shortcut function, quickly returns a snowflake ID from the attached
     # generator, based on timestamp value at the time the request was made
     def generate(self):
         return next(self.generator)
 
-# basic run script
+    def to_timestamp(self, id):
+        return to_timestamp(self.epoch, id, )
+
 if __name__ == '__main__':
-    # REBORN default epoch
+    # REBORN epoch
     # Sun, 15 Apr 2019 04:12:00.000-GMT+0:00
     _epoch = 1555301520000
 
     # second and third values are process ID and seed value replacements
     # value is a process ID replacement
     # any integer that is less than 5 bits, (2^5-1) or 31, may be used
-    _pid = random.randint(1, 31)
-    _seed = random.randint(1, 31)
+    _pid = generate_seed(5)
+    _seed = generate_seed(5)
     
     # generate a client from the Snowflake class
-    _client = Snowflake(_epoch, _pid, _seed)
+    _client = Client(_epoch, _pid, _seed)
 
     # generate an ID from the Snowflake client
     _id = _client.generate()
 
     # print the generated ID to the console
+    print(_id)
+
+    # convert the generated ID back to a timestamp
+    _id = _client.to_timestamp(_id)
+
+    # print the converted ID
     print(_id)
