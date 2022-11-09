@@ -2,11 +2,10 @@ import time
 import math
 import random
 
-# IDs are snowflakes generated using `worker` and `data center` IDs,
 # the lower 22 bits of the generated snowflake can be easily stripped
 # to return the total milliseconds passed since a defined `epoch.`
 # Adding the epoch time back into that value will return the GMT time
-# at which the ID was created
+# at which the ID was created in milliseconds
 def to_timestamp(epoch, id, fmt = 'ms'):
     id = id >> 22   # strip the lower 22 bits
     id += epoch # adjust for defined epoch time (ms)
