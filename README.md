@@ -87,6 +87,7 @@ Once the `renew` process has completed, new IDs may be perpetually generated unt
 A standalone translator function `to_timestamp` can be used to convert all snowflake IDs generated into timestamps (milliseconds).
 
 ### Standalone Generator
+The `fmt` variable is optional and defaults to `ms` for `milliseconds.` Passing a value of `s` for `seconds` will return a value of seconds passed since epoch time.
 
 ```python
   from pyflake import generator, generate_seed, to_timestamp
@@ -98,13 +99,18 @@ A standalone translator function `to_timestamp` can be used to convert all snowf
   _generator = generator(_epoch, _pid, _seed)
   
   _id = next(_generator)
+  _fmt = 'ms'
 
-  _id = to_timestamp(_id)
+  _id = to_timestamp(_epoch, _id, _fmt)
   print(_id)
 ```
 
 ### Client
 This funciton is built into the client class and does not need to be additionally imported.
+
+When calling the `to_timestamp` function via the client class, the client's epoch is used to determine the snowflake's resulting timestamp. As such, snowflakes generated using a different Client or generator may return invalid timestamps if the epoch time is different.
+
+The `fmt` variable is optional here as well, and defaults to `ms` for `milliseconds.` Passing a value of `s` for `seconds` will return a value of seconds passed since epoch time. 
 
 NOTE: Due to the bit placement of the `timestamp` value utilized during snowflake generation, the translator function will continue to operate even if the `pid` or `seed` generator values are renewed after client initialization.
 
@@ -118,7 +124,8 @@ NOTE: Due to the bit placement of the `timestamp` value utilized during snowflak
   _client = Client(_epoch, _pid, _seed)
   
   _id = _client.generate()
+  _fmt = 'ms'
   
-  _id = client.to_timestamp(_id)
+  _id = client.to_timestamp(_id, _fmt)
   print(_id)
 ```
