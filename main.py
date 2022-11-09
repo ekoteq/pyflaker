@@ -2,7 +2,6 @@ import time
 import math
 import random
 
-# IDs are snowflakes generated using `worker` and `data center` IDs,
 # the lower 22 bits of the generated snowflake can be easily stripped
 # to return the total milliseconds passed since a defined `epoch.`
 # Adding the epoch time back into that value will return the GMT time
@@ -35,7 +34,7 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
     pid_bits = 5
     seed_bits = 5
 
-    # timestamps will always be 12 bits
+    # sequence will always be 12 bits
     sequence_bits = 12
 
     # define the maximum allowed seed values based on defined bits
@@ -80,7 +79,7 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
         # as such may be the case in race conditions, where multiple IDs
         # are requested at the same time, we want to increase the sequence
         # before proceeding. If the current timestamp is greater the previous
-        # timestamp, the sequence is reset to zero.
+        # timestamp, the sequence is reset.
         if last_timestamp == timestamp:
             sequence = (sequence + 1) & sequence_mask
             # in the event the sequence becomes overrun, the sequence is updated
@@ -108,7 +107,8 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
             (seed << seed_shift) |
             (pid << pid_shift) |
             # finally, the current sequence value is returned, preventing race
-            # conditions and ensuring uniqueness
+            # conditions and ensuring uniqueness across IDs generated within
+            # the same millisecond
             sequence)
 
 # a snowflake generator client class
