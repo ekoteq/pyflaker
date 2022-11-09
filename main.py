@@ -129,12 +129,12 @@ class PyflakeClient():
 
     # destroys the current pyflake_generator, if one exists
     def destroy(self):
-        if getattr(self, 'generator'):
+        if getattr(self, 'generator', None):
             delattr(self, 'generator')
 
     # creates a new pyflake_generator, if one does not exist
     def create(self, pid, seed):
-        if not getattr(self, 'generator'):
+        if not getattr(self, 'generator', None):
             setattr(self, 'generator', pyflake_generator(self.epoch, pid, seed))
 
     # replaces the current pyflake_generator with a new one, and allows
@@ -149,5 +149,5 @@ class PyflakeClient():
     def generate(self):
         return next(self.generator)
 
-    def to_timestamp(self, id, fmt):
+    def to_timestamp(self, id, fmt = 'ms'):
         return to_timestamp(self.epoch, id, fmt)
