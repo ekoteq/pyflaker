@@ -1,5 +1,5 @@
 # pyflake
-`pyflake` is a pure Python snowflake ID generator. It offers a standalone generator that can be used to create near-endlessly unique snowflake IDs, as well as an optional PyflakeClient class to easily manage a generator and generate IDs on the fly.
+`pyflake` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
 
 # Requirements
 - Python 3.10
@@ -76,7 +76,7 @@ On renewal, the old `pyflake_generator` is destroyed via the `PyflakeClient.dest
   client.destroy()
 ```
 
-Once the available `pyflake_generator` has been destroyed, the `renew` method creates a new `pyflake_generator` for the PyflakeClient to utilize. This method also checks if a `pyflake_generator` is available prior to creating a new one to prevent unintentional overwrites. Like `PyflakeClient.destroy()`, This method is also automatically called during the `PyflakeClient.renew()` process, and passes along the `pid` and `seed` variable values.
+Once the available `pyflake_generator` has been destroyed, the `renew` method creates a new `pyflake_generator` for the `PyflakeClient` to utilize. This method also checks if a `pyflake_generator` is available prior to creating a new one to prevent unintentional overwrites. Like `PyflakeClient.destroy()`, This method is also automatically called during the `PyflakeClient.renew()` process, and passes along the `pid` and `seed` variable values.
 ```python
   client.create(pid, seed)
 ```
