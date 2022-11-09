@@ -1,3 +1,4 @@
+import sys
 import time
 import math
 import random
@@ -151,3 +152,49 @@ class PyflakeClient():
 
     def to_timestamp(self, id, fmt = 'ms'):
         return to_timestamp(self.epoch, id, fmt)
+
+if __name__ == '__main__':
+    sys.argv = sys.argv[1:]
+    length = len(sys.argv)
+    if length == 3:
+        epoch = int(sys.argv[0])
+        pid = int(sys.argv[1])
+        seed = int(sys.argv[2])
+        # generate a client for testing purposes
+        client = PyflakeClient(epoch, pid, seed)
+
+        # generate an ID to see if things are working
+        id = client.generate()
+
+        # print it out, see what it looks like
+        print(id)
+
+        # convert the generated ID into a timestamp to see if things are working
+        timestamp = client.to_timestamp(id)
+
+        # print it out, see what it looks like
+        print(timestamp)
+
+        # destroy and create the generator attached to the client
+        client.renew(generate_seed(5), generate_seed(5))
+
+        # log that something was done so the requesting client doesn't think it's stopped
+        print(f'Successfully renewed generator!')
+
+        # test the processes again to make sure they still work
+        id = client.generate()
+
+        # print it out, make sure it still looks good
+        print(id)
+
+        # convert the new ID into a timestamp to see if things are still working
+        timestamp = client.to_timestamp(id)
+ 
+        # print it out, make sure it still looks good
+        print(timestamp)
+
+        # if we made it this far, the script ran successfully without any errors
+        print(f'Test completed successfully! Exiting with code (1).')
+        sys.exit(1)
+    else:
+        raise ValueError(f'Arguments must contain:\n[0] - epoch [1 << 42]\n[1] - pid [1 << 47]\n[2] - seed [1 << 52]\n\nTotal arguments received: {length}')
