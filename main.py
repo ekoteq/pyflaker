@@ -90,7 +90,7 @@ def generator(epoch, pid, seed, sleep=lambda x: time.sleep(x/1000.0)):
                 sequence = -1 & sequence_mask
                 sleep(1)
                 continue
-        # Otherwise, if If the current timestamp is greater than the
+        # Otherwise, if the current timestamp is greater than the
         # previous timestamp, the sequence is reset, as there will be no
         # conflicts with previous IDs under a new timestamp
         else:
