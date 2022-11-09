@@ -68,17 +68,17 @@ The client also offers the ability to renew the available generator by calling t
 ```python
   _pid = generate_seed(5)
   _seed = generate_seed(5)
-  client.renew(_pid, _seed)
+  _client.renew(_pid, _seed)
 ```
 
 On renewal, the old generator is destroyed via the client's `destroy()` method, which first checks if a generator is available to the client before attempting to destroy it. While this method may be called via `client.destroy(),` it is automatically called during the `renew` process.
 ```python
-  client.destroy()
+  _client.destroy()
 ```
 
 Once the available generator has been destroyed, the `renew` method creates a new generator for the client to utilize. This method also checks if a generator is available prior to creating a new one to prevent unintentional overwrites. Like `client.destroy()`, This method is also automatically called during the `renew` process, and passes along the `pid` and `seed` values.
 ```python
-  client.create(_pid, _seed)
+  _client.create(_pid, _seed)
 ```
 
 Once the `renew` process has completed, new IDs may be perpetually generated until the script is terminated, or the generator is renewed again or destroyed.
@@ -126,6 +126,6 @@ NOTE: Due to the bit placement of the `timestamp` value utilized during snowflak
   _id = _client.generate()
   _fmt = 'ms'
   
-  _id = client.to_timestamp(_id, _fmt)
+  _id = _client.to_timestamp(_id, _fmt)
   print(_id)
 ```
