@@ -11,7 +11,6 @@
 - Python 3.10
 
 ## Core modules imported
-- `sys` - Used to capture command line arguments and handle graceful exits
 - `time` - Used to generate timestamp values
 - `math` - Used to ensure `time` timestamp values are `int` and not `float`
 - `random` - Used to generate seed values within `generate_seed`
