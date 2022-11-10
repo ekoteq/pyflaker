@@ -100,19 +100,25 @@ def pyflake_generator(epoch, pid, seed, sleep = lambda x: time.sleep(x / 1000)):
 
         # yield the loop and return the value to the requesting client
         # pending future client requests
-        yield (
-            # subtract the current timestamp from the defined epoch, which
-            # returns the miliseconds passed since the epoch time, and place
-            # the timestamp value in the sequence relative to the defined
-            # 'timestamp_shift' bit value defined above
-            ((timestamp-epoch) << timestamp_shift) |
-            # the same is done to the seed and pid values for sequence placement
-            (seed << seed_shift) |
-            (pid << pid_shift) |
-            # finally, the current sequence value is returned, preventing race
-            # conditions and ensuring uniqueness across IDs generated within
-            # the same millisecond
-            sequence)
+        yield {
+            'timestamp': timestamp,
+            'seed': seed,
+            'pid': pid,
+            'sequence': sequence,
+            'snowflake': (
+                # subtract the current timestamp from the defined epoch, which
+                # returns the miliseconds passed since the epoch time, and place
+                # the timestamp value in the sequence relative to the defined
+                # 'timestamp_shift' bit value defined above
+                ((timestamp-epoch) << timestamp_shift) |
+                # the same is done to the seed and pid values for sequence placement
+                (seed << seed_shift) |
+                (pid << pid_shift) |
+                # finally, the current sequence value is returned, preventing race
+                # conditions and ensuring uniqueness across IDs generated within
+                # the same millisecond
+                sequence)
+            }
 
 # a snowflake pyflake_generator client class
 # use of this class is not required - a pyflake_generator may be created by
@@ -120,81 +126,137 @@ def pyflake_generator(epoch, pid, seed, sleep = lambda x: time.sleep(x / 1000)):
 # the below class just makes managing the generator that much easier
 class PyflakeClient():
     def __init__(self, epoch, pid, seed):
-        self.epoch = epoch
+        # the client relies on this to translate snowflake IDs back into
+        # timestamps - changing this value will not affect the available
+        # generator, but will affect the client's ability to translate
+        # previously generated snowflakes back into timestamp values
+        self._epoch = epoch
+        # general information - how many snowflakes have been generated
+        # since client initialization, indiscriminate of generator renewals
+        self._generated = 0
+        # a cache of snowflakes generated since initialization
+        self._cache = dict()
 
         # process ID and a random generated integer are used as seed values
         # for the client pyflake_generator
         # since the maximum bits for both is 5, the value cannot be greater
         # than (2^5-1), or 31
-        self.generator = pyflake_generator(self.epoch, pid, seed)
+        # the above constraints are enforced at the `pyflake_generator`
+        # function level
+        self.create_generator(pid, seed)
 
     # destroys the current pyflake_generator, if one exists
-    def destroy(self):
+    def destroy_generator(self):
+        # we only delete the attribute if it exists
         if getattr(self, 'generator', None):
+            delattr(self, 'pid')
+            delattr(self, 'seed')
             delattr(self, 'generator')
 
     # creates a new pyflake_generator, if one does not exist
-    def create(self, pid, seed):
+    def create_generator(self, pid, seed):
+        # requesting clients will need to ensure existing generators are destroyed
+        # before trying to create a new one
+
+        # if the requesting client needs more than one generator, more than one
+        # client instance should be created, since snowflakes are unique to the
+        # pid and seed used to generate them, and especially unique to the client's
+        # epoch timestamp.
         if not getattr(self, 'generator', None):
-            setattr(self, 'generator', pyflake_generator(self.epoch, pid, seed))
+            # changing the values of these attributes will not affect the generator
+            # so there's no need to discourage clients from changing their values
+            setattr(self, 'pid', pid)
+            setattr(self, 'seed', seed)
+
+            # the generator can be re-constructed via the `create_generator` method
+            # and it's up to the requesting client to manage its creation or destruction
+            # so there's no need to discourage modifying the attribute
+            setattr(self, 'generator', pyflake_generator(self._epoch, pid, seed))
 
     # replaces the current pyflake_generator with a new one, and allows
     # the requesting client to define a process ID and seed value
-    def renew(self, pid, seed):
-        self.destroy()
-        self.create(pid, seed)
+    def renew_generator(self, pid, seed):
+        self.destroy_generator()
+        self.create_generator(pid, seed)
 
     # shortcut function, quickly returns a snowflake ID from the attached
     # pyflake_generator, based on timestamp value at the time the request
     # was made
     def generate(self):
-        return next(self.generator)
+        # a deconstructed snowflake reference object
+        # direct access to the snowflake ID is available via `res.get('snowflake')`
 
-    def to_timestamp(self, id, fmt = 'ms'):
-        return to_timestamp(self.epoch, id, fmt)
+        # store a record of the index we're going to use for this entry in the cache
+        # since we're going to reference it more than once
+        cache_idx = self._generated + 1
+
+        # grab the deconstructed response from the generator
+        res = next(self.generator)
+
+        # add the cache index to the deconstructed response
+        res['idx'] = cache_idx
+
+        # add the entry to the cache
+        self._cache[cache_idx] = res
+
+        # increase the number of generated records
+        self._generated += 1
+
+        # finally, return the constructed ID to the requesting client
+        return res.get('snowflake')
+
+    # another shortcut function, quickly converts a snowflake to a timestamp
+    # based on the client's `epoch` value
+    def to_timestamp(self, snowflake, fmt = 'ms'):
+        return to_timestamp(self._epoch, snowflake, fmt)
 
 if __name__ == '__main__':
+    # slice off the first argument, since this is the script path
     sys.argv = sys.argv[1:]
-    length = len(sys.argv)
-    if length == 3:
-        epoch = int(sys.argv[0])
-        pid = int(sys.argv[1])
-        seed = int(sys.argv[2])
-        # generate a client for testing purposes
-        client = PyflakeClient(epoch, pid, seed)
 
-        # generate an ID to see if things are working
-        id = client.generate()
+    # argvs expected:
+    # - epoch timestamp (ms, 42-bit int)
+    # - pid (process id, 5-bit int)
+    # - seed (5-bit int)
+    # all three arguments are required, so...
+    assert len(sys.argv) == 3
 
-        # print it out, see what it looks like
-        print(id)
+    # generate a client for testing purposes
+    client = PyflakeClient(int(sys.argv[0]), int(sys.argv[1]), int(sys.argv[2]))
 
-        # convert the generated ID into a timestamp to see if things are working
-        timestamp = client.to_timestamp(id)
+    # generate an ID to see if things are working
+    res = client.generate()
 
-        # print it out, see what it looks like
-        print(timestamp)
+    # print it out, see what it looks like
+    print(f'Generated snowflake:\t{res}')
 
-        # destroy and create the generator attached to the client
-        client.renew(generate_seed(5), generate_seed(5))
+    # convert the generated ID into a timestamp to see if things are working
+    timestamp = client.to_timestamp(res)
 
-        # log that something was done so the requesting client doesn't think it's stopped
-        print(f'Successfully renewed generator!')
+    # print it out, see what it looks like
+    print(f'Timestamp from snowflake:\t{timestamp}')
 
-        # test the processes again to make sure they still work
-        id = client.generate()
+    # log that something is being done so the requesting client doesn't think it's stopped
+    print(f'Renewing the generator \'pid\' and \'seed\' values...')
 
-        # print it out, make sure it still looks good
-        print(id)
+    # destroy and create the generator attached to the client
+    client.renew_generator(generate_seed(5), generate_seed(5))
 
-        # convert the new ID into a timestamp to see if things are still working
-        timestamp = client.to_timestamp(id)
+    # log that something was done so the requesting client doesn't think it's stopped
+    print(f'Successfully renewed generator \'pid\' and \'seed\' values!')
+
+    # test the processes again to make sure they still work
+    res = client.generate()
+
+    # print it out, make sure it still looks good
+    print(f'Generated snowflake:\t{res}')
+
+    # convert the new ID into a timestamp to see if things are still working
+    timestamp = client.to_timestamp(res)
  
-        # print it out, make sure it still looks good
-        print(timestamp)
+    # print it out, make sure it still looks good
+    print(f'Timestamp from snowflake:\t{timestamp}')
 
-        # if we made it this far, the script ran successfully without any errors
-        print(f'Test completed successfully! Exiting with code (1).')
-        sys.exit(1)
-    else:
-        raise ValueError(f'Arguments must contain:\n[0] - epoch [1 << 42]\n[1] - pid [1 << 47]\n[2] - seed [1 << 52]\n\nTotal arguments received: {length}')
+    # if we made it this far, the script ran successfully without any errors
+    print(f'Test completed successfully! Exiting with code \'0\'')
+    sys.exit(0)
