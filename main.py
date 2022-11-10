@@ -1,4 +1,3 @@
-import sys
 import time
 import math
 import random
@@ -201,7 +200,6 @@ class PyflakeClient():
 
         # grab the deconstructed response from the generator
         res = next(self.generator)
-
         # add the cache index to the deconstructed response
         res['idx'] = cache_idx
 
