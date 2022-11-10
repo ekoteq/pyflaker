@@ -1,12 +1,19 @@
 # pyflake
 `pyflake` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
 
+# Features
+- `PyflakeClient` - A simple client class to handle the creation and management of a single `pyflake_generator` instance, and convenient ID generation and translation
+- `pyflake_generator` - Standalone function that outputs a `generator` producing 64-bit snowflake IDs. Accepts an epoch timestamp and two additional 5-bit IDs
+- `to_timestamp` - A translator function to convert snowflake IDs into UNIX timestamps (ms). A known epoch time is required to translate any snowflake ID
+- `generate_seed` - A function that returns a random `int` value that is no greater in length than a provided `bits` size
+
 # Requirements
 - Python 3.10
 
 ## Core modules imported
+- `sys` - Used to capture command line arguments and handle graceful exits
 - `time` - Used to generate timestamp values
-- `math` - Used to ensure timestamp values are `int` and not `float`
+- `math` - Used to ensure `time` timestamp values are `int` and not `float`
 - `random` - Used to generate seed values within `generate_seed`
 
 # Usage
@@ -76,7 +83,7 @@ On renewal, the old `pyflake_generator` is destroyed via the `PyflakeClient.dest
   client.destroy()
 ```
 
-Once the available `pyflake_generator` has been destroyed, the `renew` method creates a new `pyflake_generator` for the `PyflakeClient` to utilize. This method also checks if a `pyflake_generator` is available prior to creating a new one to prevent unintentional overwrites. Like `PyflakeClient.destroy()`, This method is also automatically called during the `PyflakeClient.renew()` process, and passes along the `pid` and `seed` variable values.
+Once the available `pyflake_generator` has been destroyed, the `renew` method creates a new `pyflake_generator` for the `PyflakeClient` to utilize. This method also checks if a `pyflake_generator` is available prior to creating a new one to prevent unintentional overwrites. Like `PyflakeClient.destroy()`, this method is also automatically called during the `PyflakeClient.renew()` process, and passes along the `pid` and `seed` variable values.
 ```python
   client.create(pid, seed)
 ```
