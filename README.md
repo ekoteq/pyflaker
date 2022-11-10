@@ -146,7 +146,7 @@ The `PyflakeClient` class offers a convenient `get_info()` method to retrieve in
 ## Conversion
 A standalone translator function `to_timestamp` can be used to convert all snowflake IDs generated into timestamps (milliseconds), provided the epoch time used to create the snowflake is both known and provided.
 
-### pyflake_generator
+### pyflake_generator(`epoch: int`, `id: int`, `fmt: str`)
 The `fmt` variable is optional and defaults to `ms` for `milliseconds`. Passing a value of `s` for `seconds` will return a value of seconds passed since UNIX epoch time.
 
 ```python
@@ -165,7 +165,7 @@ The `fmt` variable is optional and defaults to `ms` for `milliseconds`. Passing 
   print(id)
 ```
 
-### PyflakeClient
+### PyflakeClient.to_timestamp(`id: int`, `fmt: str`)
 This function is built into the `PyflakeClient` class and does not need to be additionally imported.
 
 When calling the `to_timestamp` method, the client's epoch is used to determine the snowflake's resulting timestamp. As such, snowflakes generated using a different client or generator may return invalid timestamps if the epoch time used to generate the snowflake ID is different than the epoch time of the client used for conversion.
