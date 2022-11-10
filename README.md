@@ -2,10 +2,10 @@
 `pyflake` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
 
 # Features
-- `PyflakeClient` - A simple client class to handle the creation and management of a single `pyflake_generator` instance, and convenient ID generation and translation
-- `pyflake_generator` - Standalone function that outputs a `generator` producing 64-bit snowflake IDs. Accepts an epoch timestamp and two additional 5-bit IDs
 - `to_timestamp` - A translator function to convert snowflake IDs into UNIX timestamps (ms). A known epoch time is required to translate any snowflake ID
 - `generate_seed` - A function that returns a random `int` value that is no greater in length than a provided `bits` size
+- `pyflake_generator` - Standalone function that outputs a `generator` producing 64-bit snowflake IDs. Accepts an epoch timestamp and two additional 5-bit IDs
+- `PyflakeClient` - A simple client class to handle the creation and management of a single `pyflake_generator` instance, and convenient ID generation and translation
 
 # Requirements
 - Python 3.10
@@ -17,8 +17,7 @@
 - `random` - Used to generate seed values within `generate_seed`
 
 # Usage
-
-## Seeds
+## generate_seed(`bits: int`)
 This package includes a handy function for quick seed generation, which outputs a random number no longer than the provided bit value.
 
 To generate a seed with a bit value of no more than 5, as is the case with both the `pid` and `seed` variables, call the `generate_seed(bits)` function and store the response for later use.
@@ -33,18 +32,23 @@ Timestamp values are expected to be received as millisecond values no greater th
   print(seed)
 ```
 
-## pyflake_generator
+## pyflake_generator(`epoch: int`, `pid: int`, `seed: int`, `sleep: int` = x / 1000)
 A standalone snowflake ID generator may be created without an overhead `PyflakeClient` by importing and calling the `pyflake_generator(epoch, pid, seed)` function.
+
+While made available, the `sleep` parameter is optional, and will define how long the generator should wait if it encounters a situation where its ID sequence becomes overrun, or other time-related issues where the generator may need to pause before returning a value to the requesting client. Passing a value of `1` will instruct the function to delay for `1 millisecond` before proceeding, which is sufficient for this generator's purposes.
+
+A total of `4095` IDs may be generated over a `12` bit sequence, which has a shelf life of no longer than `1 millisecond`, mitigating a very small, although still realistic chance, that two IDs will be generated at once, while providing enough range in the sequence to produce nearly `4.1k` IDs in that lifespan before resetting the sequence. Delaying the client by a minimum of `1 millisecond` ensures overrun sequences do not occur, and IDs remain unique for not only the life of the generator, but the client that manages it.
 ```python
   from pyflake import pyflake_generator, generate_seed
 
   # Sun, 15 Apr 2019 04:12:00.000-GMT+0:00
   epoch = 1555301520000
   
-  pid = generate_seed(5)
-  seed = generate_seed(5)
+  pid = generate_seed(5) # 5 bits, random.randint(1, 31) or random.randint(1, (2^5-1))
+  seed = generate_seed(5) # 5 bits, random.randint(1, 31) or random.randint(1, (2^5-1))
+  sleep = 1 # 1 / 1000 = 1 ms (one millisecond)
     
-  generator = pyflake_generator(epoch, pid, seed)
+  generator = pyflake_generator(epoch, pid, seed, sleep)
 ```
 
 To generate an ID from `pyflake_generator`, the `next(<pyflake_generator>)` method should be called, and the resulting value stored for later reference:
@@ -52,46 +56,95 @@ To generate an ID from `pyflake_generator`, the `next(<pyflake_generator>)` meth
   id = next(generator)
   print(id)
 ```
+Expected output is a `dictionary` object:
+```python
+  {
+    'timestamp': 1668081259486,
+    'seed': 6,
+    'pid': 6,
+    'sequence': 0,
+    'snowflake': 473032512445898752,
+    'idx': 1
+  }
+```
 
-## PyflakeClient
+## PyflakeClient(`epoch: int`)
 This package offers the `PyflakeClient` class to easily create, renew, and destroy a `pyflake_generator`, as well as generate IDs with a cleaner API versus calling `next(<pyflake_generator>)`.
+```python
+  from pyflake import PyflakeClient
+
+  epoch = 1555301520000
+
+  client = PyflakeClient(epoch)    
+```
+Once a client instance has been created, a generator can be created for it by calling the `PyflakeClient.create_generator(pid, seed)` method.
+
+### PyflakeClient.create_generator(`pid: int`, `seed: int`)
+In order to create a generator, `pid` and `seed` values are required. The `int` values passed here should be no more than `5` bits, `(2^5-1)`, or `31` each. To conveniently generate a random `int` value within these constraints, import the `generate_seed` function.
 ```python
   from pyflake import PyflakeClient, generate_seed
 
   epoch = 1555301520000
+  client = PyflakeClient(epoch)
+
   pid = generate_seed(5)
-  seed = generate_seed(5)
-    
-  client = PyflakeClient(epoch, pid, seed)
+  seed = generate_seed(5)  
+
+  client.create_generator(pid, seed)
 ```
 
-To generate an ID from the `PyflakeClient` module, the `PyflakeClient.generate()` method should be called, and the resulting value stored for later reference:
+### PyflakeClient.destroy_generator()
+The `PyflakeClient`'s `_generator` attribute, storing the result of the `pyflake_generator` produced on initial generator creation, may be manually destroyed at any time by calling the `PyflakeClient.destroy_generator()` method. This method checks if a `pyflake_generator` is available to the `PyflakeClient` before attempting to destroy it. This method is automatically called during the `PyflakeClient.renew_generator()` process.
+```python
+  client.destroy_generator()
+```
+### PyflakeClient.renew_generator(`pid: int`, `seed: int`)
+The `PyflakeClient` also offers the ability to renew the available `pyflake_generator` by calling the `PyflakeClient.renew_generator(pid, seed)` method. By using the imported `generate_seed` function to create new `pid` and `seed` values, we can quickly renew the client's generator values and produce all new IDs without creating an entirely new `PyflakeClient` instance:
+```python
+  pid = generate_seed(5)
+  seed = generate_seed(5)
+  client.renew_generator(pid, seed)
+```
+Once the available `pyflake_generator` has been destroyed, the `renew_generator` process continues on to create a new `pyflake_generator` for the `PyflakeClient` to utilize under the same attribute name: `_generator`, by calling the same `PyflakeClient.create_generator(pid, seed)` method used to create the generator when the client was first initialized. Once the `PyflakeClient.renew_generator()` process has completed, new IDs may be perpetually generated from the new `pyflake_generator` until the script is terminated, or the client's `_generator` attribute is renewed again or destroyed.
+
+### PyflakeClient.generate()
+Once the generator has been created, the client can begin generating, caching, and outputting snowflake IDs to requesting clients. To generate an ID from the `PyflakeClient` module, the `PyflakeClient.generate()` method should be called, and the resulting value stored for later reference:
 ```python
   id = client.generate()
   print(id)
 ```
-
-The `PyflakeClient` also offers the ability to renew the available `pyflake_generator` by calling the `PyflakeClient.renew(pid, seed)` method:
+Expected output when requesting a snowflake ID from the `PyflakeClient` is a `str` value:
 ```python
-  pid = generate_seed(5)
-  seed = generate_seed(5)
-  client.renew(pid, seed)
+473032512445898752
 ```
+### PyflakeClient.\_cache
+When using the `PyflakeClient` module, every snowflake ID generated using the client (and its current and future attached generators) is stored in the `PyflakeClient`'s local `_cache` property. Entries here are stored within a `dict` and keyed by the `PyflakeClient`'s `_generated` property value `+ 1` at the time of caching.
 
-On renewal, the old `pyflake_generator` is destroyed via the `PyflakeClient.destroy()` method, which first checks if a `pyflake_generator` is available to the `PyflakeClient` before attempting to destroy it. While this method may be called via `PyflakeClient.destroy()`, it is automatically called during the `PyflakeClient.renew()` process.
+Since all generated snowflakes are cached, they may be later retrieved for review, reference, or other analysis. All cached snowflakes are representative of the deconstructed snowflake object generated by the `pyflake_generator` function that created it.
 ```python
-  client.destroy()
+  {
+    'timestamp': 1668081259486,
+    'seed': 6,
+    'pid': 6,
+    'sequence': 0,
+    'snowflake': 473032512445898752,
+    'idx': 1
+  }
 ```
-
-Once the available `pyflake_generator` has been destroyed, the `renew` method creates a new `pyflake_generator` for the `PyflakeClient` to utilize. This method also checks if a `pyflake_generator` is available prior to creating a new one to prevent unintentional overwrites. Like `PyflakeClient.destroy()`, this method is also automatically called during the `PyflakeClient.renew()` process, and passes along the `pid` and `seed` variable values.
+### PyflakeClient.get_info()
+The `PyflakeClient` class offers a convenient `get_info()` method to retrieve information requesting clients may need to commonly reference. Calling the `PyflakeClient.get_info()` method will return a dictionary object of valuable metadata:
 ```python
-  client.create(pid, seed)
+  {
+    'pid': 6, # int value, represents the 'process id' specified by the managing client
+    'seed': 6, # int value, represents the 'seed' value specified by the managing client
+    'epoch': 1555301520000, # int value, represents the epoch time (in milliseconds) which all client snowflake IDs are based
+    'generated': 2, # int value, represents the number of snowflakes generated since client initialization
+    'generator': True # boolean value, indicates the presence of an available client generator
+  }
 ```
-
-Once the `PyflakeClient.renew()` process has completed, new IDs may be perpetually generated until the script is terminated, or the `pyflake_generator` is renewed again or destroyed.
 
 ## Conversion
-A standalone translator function `to_timestamp` can be used to convert all snowflake IDs generated into timestamps (milliseconds).
+A standalone translator function `to_timestamp` can be used to convert all snowflake IDs generated into timestamps (milliseconds), provided the epoch time used to create the snowflake is both known and provided.
 
 ### pyflake_generator
 The `fmt` variable is optional and defaults to `ms` for `milliseconds`. Passing a value of `s` for `seconds` will return a value of seconds passed since UNIX epoch time.
@@ -119,16 +172,18 @@ When calling the `to_timestamp` method, the client's epoch is used to determine 
 
 The `fmt` variable is optional here as well, and defaults to `ms` for `milliseconds`. Passing a value of `s` for `seconds` will return a value of seconds passed since UNIX epoch time. 
 
-NOTE: Due to the bit placement of the `timestamp` value utilized during snowflake generation, the translator method will continue to accurately translate snowflakes even if the `pid` or `seed` values are renewed after `PyflakeClient` initialization. However, if the `PyflakeClient`'s epoch time is modified, previous snowflake IDs may no longer be translatable.
+NOTE: Due to the bit placement of the `timestamp` value utilized during snowflake generation, the translator method will continue to accurately translate snowflakes even if the `pid` or `seed` values are renewed after `PyflakeClient` initialization. However, if the `PyflakeClient`'s epoch time is modified, previous snowflake IDs may no longer be translatable. Requesting clients may have more flexibility in changing the client's `_epoch` attribute value when utilizing the built-in `PyflakeClient` cache, or another data cache, as historical epoch times may be stored alongside generated snowflakes and referenced until the record is permanently destroyed.
 
 ```python
   from pyflake import PyflakeClient, generate_seed
 
   epoch = 1555301520000
+    
+  client = PyflakeClient(epoch)
   pid = generate_seed(5)
   seed = generate_seed(5)
-    
-  client = PyflakeClient(epoch, pid, seed)
+  
+  client.create_generator(pid, seed)
   
   id = client.generate()
   fmt = 'ms'
