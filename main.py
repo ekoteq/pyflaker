@@ -212,6 +212,9 @@ class PyflakeClient():
         # since we're going to reference it more than once
         cache_idx = self._generated + 1
 
+        # increase the number of generated records
+        self._generated += 1
+
         # grab the deconstructed response from the generator
         res = next(self.generator)
         # add the cache index to the deconstructed response
@@ -219,9 +222,6 @@ class PyflakeClient():
 
         # add the entry to the cache
         self._cache[cache_idx] = res
-
-        # increase the number of generated records
-        self._generated += 1
 
         # finally, return the class object requesting client
         # calling res.string will return a string formatted
