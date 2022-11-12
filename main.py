@@ -2,26 +2,39 @@ import time
 import math
 import random
 
-# all generated IDs may be converted back into a timestamp by stripping
-# the lower 22 bits and adding the epoch time into the remaining value.
-# A timestamp cannot be returned without knowing the epoch used to
-# generate it.
-def to_timestamp(epoch, id, fmt = 'ms'):
-    id = id >> 22   # strip the lower 22 bits holding the pid, seed, and sequence
-    id += epoch # adjust for defined epoch time (ms)
-
-    # clients can optionally request timestamp in seconds format
-    # by specifying fmt as 's' instead of 'ms'
-    # this may return a float value
-    if fmt == 's':
-        id = id / 1000
-
-    return id
-
 # returns a random integer that is no less than one, and no greater
 # than the maximum integer value of the bits provided
 def generate_seed(bits):
     return random.randint(1, (2^bits-1))
+
+class Snowflake():
+    def __init__(self, epoch, pid, seed, sequence, snowflake):
+        self.epoch = epoch
+        self.pid = pid
+        self.seed = seed
+        self.sequence = sequence
+        self.snowflake = snowflake
+
+    def string(self):
+        return f'{self.snowflake}'
+
+    # all generated IDs may be converted back into a timestamp by stripping
+    # the lower 22 bits and adding the epoch time into the remaining value.
+    # A timestamp cannot be returned without knowing the epoch used to
+    # generate it.
+    def timestamp(self, fmt = 'ms'):
+        # strip the lower 22 bits holding the pid, seed, and sequence
+        timestamp = self.snowflake >> 22
+        # adjust for defined epoch time (ms)
+        timestamp += self.epoch
+
+        # clients can optionally request timestamp in seconds format
+        # by specifying fmt as 's' instead of 'ms'
+        # this may return a float value
+        if fmt == 's':
+            timestamp = timestamp / 1000
+
+        return timestamp
 
 # returns a pyflake_generator that allows a client to generate IDs by calling
 # `next(<pyflake_generator>)` on the generator
@@ -99,14 +112,14 @@ def pyflake_generator(epoch, pid, seed, sleep = lambda x: time.sleep(x / 1000)):
 
         # yield the loop and return the value to the requesting client
         # pending future client requests
-        yield {
-            'timestamp': timestamp,
-            'seed': seed,
-            'pid': pid,
-            'sequence': sequence,
-            'snowflake': (
+        yield Snowflake(
+            epoch = epoch,
+            pid = pid,
+            seed = seed,
+            sequence = sequence,
+            snowflake = (
                 # subtract the current timestamp from the defined epoch, which
-                # returns the miliseconds passed since the epoch time, and place
+                # returns the miliseconds passed since the epoch time, and define
                 # the timestamp value in the sequence relative to the defined
                 # 'timestamp_shift' bit value defined above
                 ((timestamp-epoch) << timestamp_shift) |
@@ -116,8 +129,9 @@ def pyflake_generator(epoch, pid, seed, sleep = lambda x: time.sleep(x / 1000)):
                 # finally, the current sequence value is returned, preventing race
                 # conditions and ensuring uniqueness across IDs generated within
                 # the same millisecond
-                sequence)
-            }
+                sequence
+            )
+        )
 
 # a snowflake pyflake_generator client class
 # use of this class is not required - a pyflake_generator may be created by
@@ -209,10 +223,7 @@ class PyflakeClient():
         # increase the number of generated records
         self._generated += 1
 
-        # finally, return the constructed ID to the requesting client
-        return res.get('snowflake')
-
-    # another shortcut function, quickly converts a snowflake to a timestamp
-    # based on the client's `epoch` value
-    def to_timestamp(self, snowflake, fmt = 'ms'):
-        return to_timestamp(self._epoch, snowflake, fmt)
+        # finally, return the class object requesting client
+        # calling res.string will return a string formatted
+        # snowflake, while res.snowflake will return a long int
+        return res
