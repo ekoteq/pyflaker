@@ -141,9 +141,8 @@ class PyflakeClient():
     def __init__(self, epoch):
         # the client relies on this to translate snowflake IDs back into
         # timestamps - changing this value will not affect the available
-        # generator, but will affect the client's ability to translate
-        # previously generated snowflakes back into timestamp values
-        self._epoch = epoch
+        # generator
+        self.epoch = epoch
         # general information - how many snowflakes have been generated
         # since client initialization, indiscriminate of generator renewals
         self._generated = 0
@@ -153,9 +152,9 @@ class PyflakeClient():
     # general information about the client instance
     def get_info(self):
         res = {
+            'epoch': self.epoch,
             'pid': getattr(self, 'pid', None),
             'seed': getattr(self, 'seed', None),
-            'epoch': self._epoch,
             'generated': self._generated,
         }
         # checks if the client has a generator available
@@ -193,7 +192,7 @@ class PyflakeClient():
             # the generator can be re-constructed via the `create_generator` method
             # and it's up to the requesting client to manage its creation or destruction
             # so there's no need to discourage modifying the attribute
-            setattr(self, 'generator', pyflake_generator(self._epoch, pid, seed))
+            setattr(self, 'generator', pyflake_generator(self.epoch, pid, seed))
 
     # replaces the current pyflake_generator with a new one, and allows
     # the requesting client to define a process ID and seed value
@@ -206,24 +205,15 @@ class PyflakeClient():
     # was made
     def generate(self):
         # a deconstructed snowflake reference object
-        # direct access to the snowflake ID is available via `res.get('snowflake')`
+        # direct access to the snowflake ID is available via `res.snowflake`
+        # or `res.string()`
+        res = next(self.generator)
 
-        # store a record of the index we're going to use for this entry in the cache
-        # since we're going to reference it more than once
-        cache_idx = self._generated + 1
+        # add the entry to the cache
+        self._cache[res.snowflake] = res
 
         # increase the number of generated records
         self._generated += 1
 
-        # grab the deconstructed response from the generator
-        res = next(self.generator)
-        # add the cache index to the deconstructed response
-        res['idx'] = cache_idx
-
-        # add the entry to the cache
-        self._cache[cache_idx] = res
-
         # finally, return the class object requesting client
-        # calling res.string will return a string formatted
-        # snowflake, while res.snowflake will return a long int
         return res
