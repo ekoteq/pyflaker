@@ -214,7 +214,7 @@ class PyflakeClient():
         res = next(self.generator)
 
         # add the entry to the cache
-        self._cache.update([(res.snowflake, res)])
+        self._cache.update([(res.snowflake(), res)])
 
         # increase the number of generated records
         self._generated += 1
