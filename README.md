@@ -1,6 +1,9 @@
 # pyflaker
 `pyflaker` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
 
+# Support
+Discord - `Drix#8355`
+
 # Features
 - `Pyflake` - A deconstructed ID class, detailing the `pid`, `seed`, `sequence`, and `epoch` used to create the `64 bit` `snowflake` ID. This class offers a local `timestamp()` method to convert the attached `snowflake` ID back into the timestamp used to generate it.
 - `generate_seed` - A function that returns a random `int` value that is no greater in length than a provided `bits` size
