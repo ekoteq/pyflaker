@@ -7,7 +7,7 @@ import random
 def generate_seed(bits):
     return random.randint(1, (2^bits-1))
 
-class Snowflake():
+class Pyflake():
     def __init__(self, epoch, pid, seed, sequence, snowflake):
         self.epoch = epoch
         self.pid = pid
@@ -112,7 +112,7 @@ def pyflake_generator(epoch, pid, seed, sleep = lambda x: time.sleep(x / 1000)):
 
         # yield the loop and return the value to the requesting client
         # pending future client requests
-        yield Snowflake(
+        yield Pyflake(
             epoch = epoch,
             pid = pid,
             seed = seed,
