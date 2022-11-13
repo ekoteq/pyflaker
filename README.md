@@ -1,13 +1,13 @@
-# pyflaker
+# pyflaker `0.0.0`
 `pyflaker` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
 
 # Support
 Discord - `Drix#8355`
 
 # Features
-- `Pyflake` - A deconstructed ID class, detailing the `pid`, `seed`, `sequence`, and `epoch` used to create the `64 bit` `snowflake` ID. This class offers a local `timestamp()` method to convert the attached `snowflake` ID back into the timestamp used to generate it.
+- `Pyflake` - A deconstructed ID class, detailing the `pid`, `seed`, `sequence`, and `epoch` used to create the `64 bit` `snowflake` ID.
 - `generate_seed` - A function that returns a random `int` value that is no greater in length than a provided `bits` size
-- `pyflake_generator` - Standalone function that outputs a `generator` producing 64-bit snowflake IDs. Accepts an epoch timestamp and two additional 5-bit IDs
+- `pyflake_generator` - Standalone function that outputs a `generator` producing 64-bit snowflake IDs.
 - `PyflakeClient` - A simple client class to handle the creation and management of a single `pyflake_generator` instance, and convenient ID generation and translation
 
 # Requirements
@@ -57,7 +57,7 @@ When used in conjunction with the `pyflake_generator` function, or `PyflakeClien
   print(snowflake.timestamp)
 ```
 ## pyflake_generator(`epoch: int`, `pid: int`, `seed: int`, `sequence_bits: int`, `sleep: int = x / 1000`)
-A standalone snowflake ID generator may be created without an overhead `PyflakeClient` by importing and calling the `pyflake_generator(epoch, pid, seed)` function.
+A standalone snowflake ID generator may be created without an overhead `PyflakeClient` by importing and calling the `pyflake_generator()` function.
 
 While made available, the `sleep` parameter is optional, and will define how long the generator should wait if it encounters a situation where its ID sequence becomes overrun, or other time-related issues where the generator may need to pause before returning a value to the requesting client. Passing a value of `1` will instruct the function to delay for `1 millisecond` before proceeding, which is sufficient for this generator's purposes.
 
@@ -69,9 +69,10 @@ A `12 bit` sequence has a shelf life of no longer than `1 millisecond`, mitigati
 
   pid = generate_seed(5) # 5 bits, random.randint(1, 31) or random.randint(1, (2^5-1))
   seed = generate_seed(5) # 5 bits, random.randint(1, 31) or random.randint(1, (2^5-1))
+  sequence_bits = 12 # maximum bit length of the sequence
   sleep = 1 # 1 / 1000 = 1 ms (one millisecond)
 
-  generator = pyflake_generator(epoch, pid, seed, sleep)
+  generator = pyflake_generator(epoch, pid, seed, sequence_bits, sleep)
 ```
 
 To generate an ID from `pyflake_generator`, the `next(<pyflake_generator>)` method should be called, and the resulting value stored for later reference:
