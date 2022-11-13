@@ -160,6 +160,8 @@ class PyflakeClient():
             delattr(self, 'pid')
             delattr(self, 'seed')
             delattr(self, 'generator')
+        else:
+            raise AttributeError(f'Cannot destroy generator: No generator is available to destroy.')
 
     # creates a new pyflake_generator, if one does not exist
     def create_generator(self, pid, seed):
@@ -180,12 +182,27 @@ class PyflakeClient():
             # and it's up to the requesting client to manage its creation or destruction
             # so there's no need to discourage modifying the attribute
             setattr(self, 'generator', pyflake_generator(self.epoch, pid, seed))
+        else:
+            raise AttributeError(f'Cannot create generator: Generator already exists for use.')
 
     # replaces the current pyflake_generator with a new one, and allows
     # the requesting client to define a process ID and seed value
     def renew_generator(self, pid, seed):
-        self.destroy_generator()
-        self.create_generator(pid, seed)
+        try:
+            self.destroy_generator()
+        except Exception as e:
+            # the only acceptable exception is an `AttributeError`
+            # which indicates a generator is not currently available
+            # so one could easily be created in its place
+            # in this case, we don't want to raise the exception
+            if isinstance(e, AttributeError):
+                self.create_generator(pid, seed)
+            else:
+                # otherwise, raise the exception
+                raise e
+        else:
+            # if the destroy 
+            self.create_generator(pid, seed)
 
     # shortcut function, quickly returns a snowflake ID from the attached
     # pyflake_generator, based on timestamp value at the time the request
