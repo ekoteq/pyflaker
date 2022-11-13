@@ -1,5 +1,5 @@
 # pyflaker
-`pyflake` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
+`pyflaker` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
 
 # Features
 - `to_timestamp` - A translator function to convert snowflake IDs into UNIX timestamps (ms). A known epoch time is required to translate any snowflake ID
