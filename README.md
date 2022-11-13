@@ -1,5 +1,5 @@
-# pyflake
-`pyflake` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
+# pyflaker
+`pyflaker` is a pure Python snowflake ID generator. It offers a standalone `pyflake_generator` function that can be used to create unique snowflake IDs, as well as an optional `PyflakeClient` class to easily manage a generator and generate IDs on the fly.
 
 # Features
 - `to_timestamp` - A translator function to convert snowflake IDs into UNIX timestamps (ms). A known epoch time is required to translate any snowflake ID
@@ -25,7 +25,7 @@ Both the `PyflakeClient` class and `pyflake_generator` function require `epoch` 
 
 Timestamp values are expected to be received as millisecond values no greater than `42` bits in length that may be converted to a human-readable date. While a valid <42-bit integer may be generated using the `generate_seed` function, timestamp values should NOT be generated using the `generate_seed` function if a human-readable date is expected to be referenced from the ID in the future.
 ```python
-  from pyflake import generate_seed
+  from pyflaker import generate_seed
   
   seed = generate_seed(5)
   print(seed)
@@ -38,7 +38,7 @@ While made available, the `sleep` parameter is optional, and will define how lon
 
 A total of `4095` IDs may be generated over a `12` bit sequence, which has a shelf life of no longer than `1 millisecond`, mitigating a very small, although still realistic chance, that two IDs will be generated at once, while providing enough range in the sequence to produce nearly `4.1k` IDs in that lifespan before resetting the sequence. Delaying the client by a minimum of `1 millisecond` ensures overrun sequences do not occur, and IDs remain unique for not only the life of the generator, but the client that manages it.
 ```python
-  from pyflake import pyflake_generator, generate_seed
+  from pyflaker import pyflake_generator, generate_seed
 
   # Sun, 15 Apr 2019 04:12:00.000-GMT+0:00
   epoch = 1555301520000
@@ -70,7 +70,7 @@ Expected output is a `dictionary` object:
 ## PyflakeClient(`epoch: int`)
 This package offers the `PyflakeClient` class to easily create, renew, and destroy a `pyflake_generator`, as well as generate IDs with a cleaner API versus calling `next(<pyflake_generator>)`.
 ```python
-  from pyflake import PyflakeClient
+  from pyflaker import PyflakeClient
 
   epoch = 1555301520000
 
@@ -81,7 +81,7 @@ Once a client instance has been created, a generator can be created for it by ca
 ### PyflakeClient.create_generator(`pid: int`, `seed: int`)
 In order to create a generator, `pid` and `seed` values are required. The `int` values passed here should be no more than `5` bits, `(2^5-1)`, or `31` each. To conveniently generate a random `int` value within these constraints, import the `generate_seed` function.
 ```python
-  from pyflake import PyflakeClient, generate_seed
+  from pyflaker import PyflakeClient, generate_seed
 
   epoch = 1555301520000
   client = PyflakeClient(epoch)
@@ -149,7 +149,7 @@ A standalone translator function `to_timestamp` can be used to convert all snowf
 The `fmt` variable is optional and defaults to `ms` for `milliseconds`. Passing a value of `s` for `seconds` will return a value of seconds passed since UNIX epoch time.
 
 ```python
-  from pyflake import pyflake_generator, generate_seed, to_timestamp
+  from pyflaker import pyflake_generator, generate_seed, to_timestamp
   
   epoch = 1555301520000
   pid = generate_seed(5)
@@ -174,7 +174,7 @@ The `fmt` variable is optional here as well, and defaults to `ms` for `milliseco
 NOTE: Due to the bit placement of the `timestamp` value utilized during snowflake generation, the translator method will continue to accurately translate snowflakes even if the `pid` or `seed` values are renewed after `PyflakeClient` initialization. However, if the `PyflakeClient`'s epoch time is modified, previous snowflake IDs may no longer be translatable. Requesting clients may have more flexibility in changing the client's `_epoch` attribute value when utilizing the built-in `PyflakeClient` cache, or another data cache, as historical epoch times may be stored alongside generated snowflakes and referenced until the record is permanently destroyed.
 
 ```python
-  from pyflake import PyflakeClient, generate_seed
+  from pyflaker import PyflakeClient, generate_seed
 
   epoch = 1555301520000
     
