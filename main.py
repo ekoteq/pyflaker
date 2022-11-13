@@ -26,13 +26,15 @@ class Pyflake():
     def sequence_bits(self):
         return self.sequence.bit_length()
 
+    def pid_shift(self):
+        return self.sequence_bits()
+
+    def seed_shift(self):
+        return self.pid_shift() + self.pid_bits()
+
     def timestamp_shift(self):
         # left-hand bit position where the timestamp can be found
-        return self.sequence_bits() + self.pid_bits() + self.seed_bits()
-
-    def pid_shift(self):
-        # bit position where the process ID can be found in the snowflake
-        return self.sequence_bits()
+        return self.seed_shift() + self.seed_bits()
 
     # generating the snowflake via a local method
     # allows clients (albeit a bit dangerously)
