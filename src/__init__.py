@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     ]
 
 __all__: Tuple[str, ...] = (
+    'snowflake_to_datetime',
+    'generate_snowflake',
     'SnowflakeGenerator',
 )
 
