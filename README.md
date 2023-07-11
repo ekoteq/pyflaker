@@ -6,7 +6,7 @@ Discord - `@drixxobot`
 
 # Features
 - `EKO_EPOCH` - A default datetime value for `2019-04-15 04:12:00+0`
-- `snowflake_to_timestamp` - A function to convert a snowflake ID and an epoch to a `datetime` object
+- `snowflake_to_datetime` - A function to convert a snowflake ID and an epoch to a `datetime` object
 - `generate_snowflake` - A coroutine function to generate a snowflake ID based on provided `epoch`, `worker_id`, `process_id`, `last_timestamp`, and `sequence` values.
 - `SnowflakeGenerator` - An asynchronous snowflake generator class to handle the creation and management of a single `SnowflakeGenerator` instance
 
