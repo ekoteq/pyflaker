@@ -2,7 +2,7 @@
 `pyflaker` is a pure Python snowflake ID generator. It offers a `SnowflakeGenerator` class that can be used to create unique snowflake IDs, as well as utility functions to create and convert snowflake IDs.
 
 # Support
-Discord - `@drixxobot`
+Discord - `@drixxenol`
 
 # Features
 - `EKO_EPOCH` - A default datetime value for `2019-04-15 04:12:00+0`
