@@ -59,17 +59,17 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
         self._closed = Event()
         
         if not isinstance(epoch, datetime):
-            raise TypeError(f'Invalid epoch: {epoch}')
+            raise TypeError(f'Invalid epoch (object is not instance of datetime): {type(epoch).__name__}')
 
         self._epoch = epoch
 
         if process_id >= process_id_bits:
-            raise ValueError(f'Invalid process id value (process_id value greater than 31): {process_id}')
+            raise ValueError(f'Invalid process id value (process_id value greater than {process_id_bits - 1:,}): {process_id}')
 
         self._process_id = process_id
 
         if thread_id >= thread_id_bits:
-            raise ValueError(f'Invalid thread id value (thread_id value greater than 31): {thread_id}')
+            raise ValueError(f'Invalid thread id value (thread_id value greater than {thread_id_bits - 1:,}): {thread_id}')
 
         self._thread_id = thread_id
         
@@ -77,12 +77,12 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
             raise ValueError(f'Invalid step value (step value less than 1): {step}')
         
         if step >= sequence_bits:
-            raise ValueError(f'Invalid step value (step value greater than 4,095): {step}')
+            raise ValueError(f'Invalid step value (step value greater than {sequence_bits - 1:,})): {step}')
 
         self._step = step
 
         if sequence >= sequence_bits:
-            raise ValueError(f'Invalid sequence (sequence value greater than 4,095): {sequence}')
+            raise ValueError(f'Invalid sequence (sequence value greater than {sequence_bits - 1:,}): {sequence}')
 
         self._sequence = sequence
 
@@ -90,7 +90,7 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
             last = datetime.now()
 
         if not isinstance(last, datetime):
-            raise TypeError(f'Invalid last (object is not instance of datetime): {last}')
+            raise TypeError(f'Invalid last (object is not instance of datetime): {type(last).__name__}')
 
         self._last = last
         
@@ -120,10 +120,10 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
         value: int,
     ) -> None:
         if self.closed:
-            raise RuntimeError(f'Cannot modify sequence valaue (snowflake generator is closed)')
+            raise RuntimeError(f'Cannot modify sequence value (snowflake generator is closed)')
 
         if value >= sequence_bits:
-            raise ValueError(f'Invalid sequence (sequence value greater than 4,095): {value}')
+            raise ValueError(f'Invalid sequence (sequence value greater than {sequence_bits - 1:,}): {value}')
         
         self._sequence = value
     
@@ -140,7 +140,7 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
             raise RuntimeError(f'Cannot modify last value (snowflake generator is closed)')
 
         if not isinstance(value, datetime):
-            raise TypeError(f'Invalid last (object is not instance of datetime): {value}')
+            raise TypeError(f'Invalid last (object is not instance of datetime): {type(value).__name__}')
         
         self._last = value
 
@@ -200,7 +200,7 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
         self._lock.release()
         
         if res >= snowflake_bits:
-            raise ValueError(f'Invalid snowflake (snowflake value greater than 2^64): {res}')
+            raise ValueError(f'Invalid snowflake (snowflake value greater than {snowflake_bits - 1:,}): {res}')
         
         return res
     
@@ -210,41 +210,3 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
     @property
     def closed(self: SnowflakeGenerator) -> bool:
         return self._closed.is_set()
-
-if __name__ == "__main__":
-    epoch = datetime(
-        2019,
-        4,
-        15,
-        4,
-        12,
-    )
-    process_id = 31
-    thread_id = 31
-    step = 1
-    sequence = 0
-    last = datetime.now()
-    
-    snowflake_generator = SnowflakeGenerator(
-        epoch = epoch,
-        process_id = process_id,
-        thread_id = thread_id,
-        step = step,
-        sequence = sequence,
-        last = last,
-    )
-    
-    print(f'epoch: {epoch}, {snowflake_generator.epoch}')
-    print(f'process_id: {process_id}, {snowflake_generator.process_id}')
-    print(f'thread_id: {thread_id}, {snowflake_generator.thread_id}')
-    print(f'step: {step}, {snowflake_generator.step}')
-    print(f'sequence: {sequence}, {snowflake_generator.sequence}')
-    print(f'last: {last}, {snowflake_generator.last}')
-    print(f'closed: {snowflake_generator.closed}')
-    
-    for i in range(10):
-        print(f'generated #{i}: {snowflake_generator.generate()}')
-        
-    snowflake_generator.close()
-    
-    print(f'closed: {snowflake_generator.closed}')
