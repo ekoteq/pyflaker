@@ -147,7 +147,7 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
     def __iter__(self: SnowflakeGenerator) -> SnowflakeGenerator:
         return self
     
-    def __next__(self: SnowflakeGenerator) -> int:
+    def __next__(self: SnowflakeGenerator) -> _SnowflakeType:
         if self.closed:
             raise StopIteration('Cannot get next snowflake (snowflake generator is closed)')
 
@@ -159,7 +159,7 @@ class SnowflakeGenerator(Generic[_SnowflakeType]):
         ) as e:
             raise StopIteration(f'Cannot get next snowflake ({e})')
     
-    def generate(self: SnowflakeGenerator) -> int:
+    def generate(self: SnowflakeGenerator) -> _SnowflakeType:
         if self.closed:
             raise RuntimeError(f'Cannot generate snowflake (snowflake generator is closed)')
 
