@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     )
     
 __all__: Tuple[str, ...] = (
-    'Snowflakes',
+    'SnowflakeGenerator',
 )
 
 _SnowflakeType = TypeVar(
